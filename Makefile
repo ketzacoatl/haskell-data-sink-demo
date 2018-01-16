@@ -20,7 +20,7 @@ run-sink:
 
 ## Use docker to run redis
 run-redis:
-	@docker run --rm --name=redis --net=host -p 127.0.0.1:6379:6379 redis
+	@docker run --rm --name=redis --net=host -p 127.0.0.1:6379:6379 redis:alpine
 
 ## Use curl to send JSON POST to test
 post-msg:
