@@ -1,0 +1,78 @@
+image: registry.dev-sandbox.fpcomplete.com/ops/default-build-image:alpine-gitlab-ci-8
+
+stages:
+  - build
+  - deploy
+
+cache:
+  key: "$CI_BUILD_NAME"
+  paths:
+    - .stack-work/
+    - .stack-root/
+
+variables:
+    PROJECT_NAME:       "haskell-data-sink-demo"
+    BASE_DOMAIN:        "dev-sandbox.fpcomplete.com"
+    REVIEW_APPS_DOMAIN: "gitlab.${BASE_DOMAIN}"
+    DEPLOYMENT_IMAGE:   "${CI_REGISTRY_IMAGE}:${CI_BUILD_REF_SLUG}_${CI_PIPELINE_ID}"
+    DEPLOYMENT_NAME:    "${PROJECT_NAME}-${CI_BUILD_REF_SLUG}"
+    DEPLOYMENT_APP:     "${CI_ENVIRONMENT_SLUG}"
+    STACK_ROOT:         "${CI_PROJECT_DIR}/.stack-root"
+
+docker-build:
+  stage: build
+  script:
+    - stack setup
+    - stack build
+    - docker login -u gitlab-ci-token -p "${CI_BUILD_TOKEN}" "${CI_REGISTRY}"
+    - docker push "${DEPLOYMENT_IMAGE}"
+
+
+#deploy_review:
+#  stage: deploy
+#  only:
+#    - branches
+#  except:
+#    - master
+#  environment:
+#    name: $PROJECT_NAME/$CI_BUILD_REF_NAME
+#    url: https://$PROJECT_NAME-$CI_BUILD_REF_SLUG.$REVIEW_APPS_DOMAIN
+#    on_stop: stop_review
+#  variables:
+#    APPROOT: https://$PROJECT_NAME-$CI_BUILD_REF_SLUG.$REVIEW_APPS_DOMAIN
+#  script:
+#    - #KUBELOGIN
+#    - #KUBEAPPLY
+#
+#stop_review:
+#  stage: deploy
+#  only:
+#    - branches
+#  except:
+#    - master
+#  when: manual
+#  environment:
+#    name: $PROJECT_NAME/$CI_BUILD_REF_NAME
+#    action: stop
+#  script:
+#    - #KUBELOGIN
+#    - kubectl delete service,deployment -l app=${CI_ENVIRONMENT_SLUG}
+#
+#deploy_prod:
+#  stage: deploy
+#  only:
+#    - master
+#  environment:
+#    name: $PROJECT_NAME-prod
+#    url: https://$PROJECT_NAME.BASE_DOMAIN/
+#  variables:
+#    DEPLOYMENT_NAME: "${PROJECT_NAME}-prod"
+#  script:
+#   #- export prod creds
+#   #- login to cluster manager on prod cluster
+#    - docker login -u "$PROD_DOCKER_USERNAME" -p "${PROD_DOCKER_PASSWORD}"
+#    - docker tag "$DEPLOYMENT_IMAGE" "$PROD_DEPLOYMENT_IMAGE"
+#    - docker push "$PROD_DEPLOYMENT_IMAGE"
+#    - kubectl apply -f <(envsubst <etc/kube/service_template.yaml)
+#    - kubectl apply -f <(envsubst <etc/kube/deployment_template.yaml)
+#    - kubectl rollout status "deployment/$DEPLOYMENT_NAME"
