@@ -1,4 +1,4 @@
-image: fpco/stack-build:lts-10.2
+image: registry.dev-sandbox.fpcomplete.com/ops/default-build-image:stack-build-gitlab-ci-19
 
 stages:
   - build
