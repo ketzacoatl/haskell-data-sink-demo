@@ -11,13 +11,17 @@ cache:
     - .stack-root/
 
 variables:
-    PROJECT_NAME:       "haskell-data-sink-demo"
-    BASE_DOMAIN:        "dev-sandbox.fpcomplete.com"
-    REVIEW_APPS_DOMAIN: "gitlab.${BASE_DOMAIN}"
-    DEPLOYMENT_IMAGE:   "${CI_REGISTRY_IMAGE}:${CI_BUILD_REF_SLUG}_${CI_PIPELINE_ID}"
-    DEPLOYMENT_NAME:    "${PROJECT_NAME}-${CI_BUILD_REF_SLUG}"
-    DEPLOYMENT_APP:     "${CI_ENVIRONMENT_SLUG}"
-    STACK_ROOT:         "${CI_PROJECT_DIR}/.stack-root"
+  PROJECT_NAME:       "haskell-data-sink-demo"
+  BASE_DOMAIN:        "dev-sandbox.fpcomplete.com"
+  REVIEW_APPS_DOMAIN: "gitlab.${BASE_DOMAIN}"
+  DEPLOYMENT_IMAGE:   "${CI_REGISTRY_IMAGE}:${CI_BUILD_REF_SLUG}_${CI_PIPELINE_ID}"
+  DEPLOYMENT_NAME:    "${PROJECT_NAME}-${CI_BUILD_REF_SLUG}"
+  DEPLOYMENT_APP:     "${CI_ENVIRONMENT_SLUG}"
+  STACK_ROOT:         "${CI_PROJECT_DIR}/.stack-root"
+  NOMAD_DATACENTERS:  "data-ops-eval.us-west-2"
+  NOMAD_REGION:       "us-west-2"
+  CLUSTER_BASTION:    "bastion.ci.us-west-2"
+  NOMAD_ADDR:         "localhost:4646"
 
 docker-build:
   stage: build
@@ -28,35 +32,42 @@ docker-build:
     - docker push "${DEPLOYMENT_IMAGE}"
 
 
-#deploy_review:
-#  stage: deploy
-#  only:
-#    - branches
-#  except:
-#    - master
-#  environment:
-#    name: $PROJECT_NAME/$CI_BUILD_REF_NAME
-#    url: https://$PROJECT_NAME-$CI_BUILD_REF_SLUG.$REVIEW_APPS_DOMAIN
-#    on_stop: stop_review
-#  variables:
-#    APPROOT: https://$PROJECT_NAME-$CI_BUILD_REF_SLUG.$REVIEW_APPS_DOMAIN
-#  script:
-#    - #KUBELOGIN
-#    - #KUBEAPPLY
-#
-#stop_review:
-#  stage: deploy
-#  only:
-#    - branches
-#  except:
-#    - master
-#  when: manual
-#  environment:
-#    name: $PROJECT_NAME/$CI_BUILD_REF_NAME
-#    action: stop
-#  script:
-#    - #KUBELOGIN
-#    - kubectl delete service,deployment -l app=${CI_ENVIRONMENT_SLUG}
+deploy_review:
+  stage: deploy
+  only:
+    - branches
+  except:
+    - master
+  environment:
+    name: $PROJECT_NAME/$CI_BUILD_REF_NAME
+    url: https://$PROJECT_NAME-$CI_BUILD_REF_SLUG.$REVIEW_APPS_DOMAIN
+    on_stop: stop_review
+  variables:
+    APPROOT: https://$PROJECT_NAME-$CI_BUILD_REF_SLUG.$REVIEW_APPS_DOMAIN
+    NOMAD_JOB_NAME: update-me
+  script:
+    - "nomad status"
+    - "cd etc/nomad && terraform init && terraform plan -out=tf.out && terraform apply tf.out"
+    - "nomad status"
+
+stop_review:
+  stage: deploy
+  only:
+    - branches
+  except:
+    - master
+  when: manual
+  environment:
+    name: $PROJECT_NAME/$CI_BUILD_REF_NAME
+    action: stop
+  variables:
+    NOMAD_JOB_NAME: update-me
+  script:
+    - "nomad status"
+    - "nomad stop ${JOB_NAME}"
+    - "cd etc/nomad && terraform init && terraform plan -destroy -out=tf.out && terraform apply tf.out"
+    - "nomad status"
+
 #
 #deploy_prod:
 #  stage: deploy
