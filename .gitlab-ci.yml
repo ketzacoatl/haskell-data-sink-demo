@@ -1,4 +1,4 @@
-image: registry.dev-sandbox.fpcomplete.com/ops/default-build-image:alpine-gitlab-ci-8
+image: fpco/stack-build:lts-10.2
 
 stages:
   - build
