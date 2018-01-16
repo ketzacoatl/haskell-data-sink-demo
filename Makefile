@@ -22,6 +22,14 @@ run-sink:
 run-redis:
 	@docker run --rm --name=redis --net=host -p 127.0.0.1:6379:6379 redis:alpine
 
+## Use docker to run postgres
+run-postgres:
+	@docker run --rm --name=postgres --net=host -v ${PWD}/pg-data:/var/lib/postgresql -p 127.0.0.1:5432:5432 -e POSTGRES_PASSWORD=password postgres:alpine
+
+## Use docker exec and psql to create a database in the db container
+create-test-db:
+	@docker exec -it postgres /bin/bash -c "psql -U postgres -c 'CREATE DATABASE test;'"
+
 ## Use curl to send JSON POST to test
 post-msg:
 	@echo "curl status:"
