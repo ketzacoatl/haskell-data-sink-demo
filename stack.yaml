@@ -17,6 +17,14 @@
 #  location: "./custom-snapshot.yaml"
 resolver: lts-10.2
 
+setup-info:
+  ghc:
+    linux64-alpine:
+      8.2.2:
+        url: https://mitchty.net/ghc/8.2.2/ghc-8.2.2-x86_64-alpine-linux.tar.xz
+
+ghc-build: alpine
+
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
